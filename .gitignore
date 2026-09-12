@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Builds
+dist/
+**/dist/
+
+# Environment
+.env
+**/.env
+
+# SQLite Database
+*.db
+*.db-wal
+*.db-shm
+**/*.db
+**/*.db-wal
+**/*.db-shm
+
+# IDE / System
+.DS_Store
+Thumbs.db
+.vscode/

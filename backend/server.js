@@ -20,7 +20,8 @@ const PORT = process.env.PORT || 4000;
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 // ---------------------------------------------------------------------------
 // DB setup
@@ -34,6 +35,7 @@ db.exec(`
     username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
+    avatar_url TEXT DEFAULT '',
     xp INTEGER NOT NULL DEFAULT 0,
     level INTEGER NOT NULL DEFAULT 1,
     gold INTEGER NOT NULL DEFAULT 50,
@@ -46,7 +48,15 @@ db.exec(`
     creativity INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
+`);
 
+try {
+  db.exec("ALTER TABLE users ADD COLUMN avatar_url TEXT DEFAULT ''");
+} catch {
+  // Column already exists
+}
+
+db.exec(`
   CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -144,6 +154,7 @@ function publicUser(u) {
     id: u.id,
     username: u.username,
     email: u.email,
+    avatar_url: u.avatar_url || "",
     xp: u.xp,
     level: u.level,
     gold: u.gold,
@@ -227,6 +238,13 @@ app.get("/api/me", auth, (req, res) => {
   const user = getUser(req.userId);
   if (!user) return res.status(404).json({ error: "User not found" });
   res.json({ user: publicUser(user) });
+});
+
+app.put("/api/user/avatar", auth, (req, res) => {
+  const { avatar_url } = req.body || {};
+  db.prepare("UPDATE users SET avatar_url = ? WHERE id = ?").run(avatar_url || "", req.userId);
+  const updatedUser = getUser(req.userId);
+  res.json({ user: publicUser(updatedUser) });
 });
 
 // ---------------------------------------------------------------------------
@@ -366,11 +384,22 @@ app.post("/api/shop/:itemId/buy", auth, (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// Public platform stats
+app.get("/api/stats", (req, res) => {
+  const userCount = db.prepare("SELECT COUNT(*) c FROM users").get().c;
+  const completedQuestsCount = db.prepare("SELECT COUNT(*) c FROM tasks WHERE completed = 1").get().c;
+  res.json({
+    totalUsers: userCount,
+    questsCompleted: completedQuestsCount,
+  });
+});
+
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
 app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ error: "Something went wrong on our end" });
+  console.error("Server Error:", err);
+  const status = err.status || err.statusCode || 500;
+  res.status(status).json({ error: err.message || "Something went wrong on our end" });
 });
 
 app.listen(PORT, () => console.log(`Life RPG API running on :${PORT}`));

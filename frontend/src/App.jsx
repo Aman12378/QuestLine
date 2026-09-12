@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import { api, setToken } from "./api";
 import Auth from "./components/Auth";
 import Dashboard from "./components/Dashboard";
+import LandingPage from "./components/LandingPage";
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [view, setView] = useState("landing"); // "landing" | "auth"
+  const [authMode, setAuthMode] = useState("login"); // "login" | "signup"
 
   useEffect(() => {
     const token = localStorage.getItem("questline_token");
@@ -29,8 +32,40 @@ export default function App() {
   }
 
   if (!user) {
-    return <Auth onAuthed={setUser} />;
+    if (view === "auth") {
+      return (
+        <Auth
+          onAuthed={setUser}
+          initialMode={authMode}
+          onBack={() => setView("landing")}
+        />
+      );
+    }
+
+    return (
+      <LandingPage
+        onGetStarted={() => {
+          setAuthMode("signup");
+          setView("auth");
+        }}
+        onLogin={() => {
+          setAuthMode("login");
+          setView("auth");
+        }}
+      />
+    );
   }
 
-  return <Dashboard user={user} setUser={setUser} />;
+  return (
+    <Dashboard
+      user={user}
+      setUser={setUser}
+      onLogout={() => {
+        setToken(null);
+        setUser(null);
+        setView("landing");
+      }}
+    />
+  );
 }
+

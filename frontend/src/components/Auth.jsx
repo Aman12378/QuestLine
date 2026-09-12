@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { api, setToken } from "../api";
 
-export default function Auth({ onAuthed }) {
-  const [mode, setMode] = useState("login"); // "login" | "signup"
+export default function Auth({ onAuthed, initialMode = "login", onBack }) {
+  const [mode, setMode] = useState(initialMode); // "login" | "signup"
   const [form, setForm] = useState({ username: "", email: "", password: "", emailOrUsername: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,8 +30,16 @@ export default function Auth({ onAuthed }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center px-4 relative">
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="absolute top-6 left-6 text-sm text-parchment/60 hover:text-gold flex items-center gap-1.5 transition"
+        >
+          <span>←</span> Back to Home
+        </button>
+      )}
+      <div className="w-full max-w-md my-12">
         <div className="text-center mb-8">
           <div className="text-5xl mb-3">⚔️</div>
           <h1 className="font-display text-3xl text-gold tracking-wide">Questline</h1>

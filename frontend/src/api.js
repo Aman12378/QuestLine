@@ -52,4 +52,6 @@ export const api = {
   completeTask: (id) => request(`/api/tasks/${id}/complete`, { method: "POST" }),
   shop: () => request("/api/shop"),
   buyItem: (id) => request(`/api/shop/${id}/buy`, { method: "POST" }),
+  getStats: () => request("/api/stats"),
+  updateAvatar: (avatarUrl) => request("/api/user/avatar", { method: "PUT", body: { avatar_url: avatarUrl } }),
 };

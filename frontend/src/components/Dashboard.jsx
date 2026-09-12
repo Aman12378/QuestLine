@@ -97,6 +97,49 @@ export default function Dashboard({ user, setUser }) {
     }
   }
 
+  async function handleAvatarUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement("canvas");
+        const maxDim = 300;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+
+        try {
+          const res = await api.updateAvatar(dataUrl);
+          setUser(res.user);
+          setError("");
+          setToast({ text: "Profile photo updated! ✨" });
+          setTimeout(() => setToast(null), 2200);
+        } catch (err) {
+          setError(err.message);
+        }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
   const pending = tasks.filter((t) => !t.completed);
   const done = tasks.filter((t) => t.completed);
   const xpPct = Math.min(100, Math.round((user.xp / user.xp_to_next) * 100));
@@ -105,15 +148,42 @@ export default function Dashboard({ user, setUser }) {
     <div className="min-h-screen pb-20">
       {/* Header / character panel */}
       <header className="rune-panel m-4 sm:m-6 p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-parchment/50 text-xs uppercase tracking-wider">Welcome back</p>
-            <h1 className="font-display text-2xl sm:text-3xl text-gold">{user.username}</h1>
-            <div className="flex items-center gap-3 mt-1 text-sm text-parchment/70">
-              <span className={`inline-flex items-center gap-1 ${celebrateLevel ? "animate-celebrate" : ""}`}>
-                🏵️ Level {user.level}
-              </span>
-              <span className="inline-flex items-center gap-1">🔥 {user.streak_count}-day streak</span>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {/* Avatar container with photo upload */}
+            <div className="relative group">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-gold/60 bg-dungeon-700 flex items-center justify-center text-3xl shadow-goldglow">
+                {user.avatar_url ? (
+                  <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+                ) : (
+                  <span>🛡️</span>
+                )}
+              </div>
+              <label
+                htmlFor="avatar-upload"
+                className="absolute bottom-0 right-0 bg-mystic hover:bg-mystic/90 text-white p-1.5 rounded-full text-xs shadow-md cursor-pointer hover:scale-110 transition border border-dungeon-900"
+                title="Upload Profile Photo"
+              >
+                📷
+              </label>
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
+            </div>
+
+            <div>
+              <p className="text-parchment/50 text-xs uppercase tracking-wider">Welcome back</p>
+              <h1 className="font-display text-2xl sm:text-3xl text-gold">{user.username}</h1>
+              <div className="flex items-center gap-3 mt-1 text-sm text-parchment/70">
+                <span className={`inline-flex items-center gap-1 ${celebrateLevel ? "animate-celebrate" : ""}`}>
+                  🏵️ Level {user.level}
+                </span>
+                <span className="inline-flex items-center gap-1">🔥 {user.streak_count}-day streak</span>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
